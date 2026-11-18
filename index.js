@@ -146,7 +146,7 @@ app.get("/tuitions", async (req, res) => {
 
 
 app.get("/tuitions/featured", async (req, res) => {
-    
+
   const tuitions = await tuitionsCollection
     .find({ approvalStatus: "approved", isActive: true })
     .sort({ createdAt: -1 })
@@ -173,6 +173,76 @@ app.get("/tuitions/:id", async (req, res) => {
   }
   res.send(tuition);
 });
+
+
+app.get("/tutor/tuitions", async (req, res) => {
+  const { email } = req.query;
+
+  const tuitions = await tuitionsCollection
+    .find({ tutorEmail: email })
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  res.send(tuitions);
+});
+
+// update
+app.patch("/tuitions/:id", async (req, res) => {
+  const body = req.body;
+
+  const updatedDoc = {
+    title: body.title,
+    subject: body.subject,
+    classLevel: body.classLevel,
+    mode: body.mode,
+    location: body.location,
+    monthlyFee: Number(body.monthlyFee),
+    daysPerWeek: Number(body.daysPerWeek),
+    bannerImage: body.bannerImage,
+    description: body.description,
+  };
+
+  const result = await tuitionsCollection.updateOne(
+
+    { _id: new ObjectId(req.params.id) },
+    { $set: updatedDoc }
+  );
+
+  res.send(result);
+});
+
+// Active / Closed
+app.patch("/tuitions/:id/toggle", async (req, res) => {
+
+  const { isActive } = req.body;
+  const result = await tuitionsCollection.updateOne(
+
+    { _id: new ObjectId(req.params.id) },
+    { $set: { isActive } }
+  );
+
+  res.send(result);
+});
+
+// delete
+app.delete("/tuitions/:id", async (req, res) => {
+
+  const result = await tuitionsCollection.deleteOne({
+    _id: new ObjectId(req.params.id),
+  });
+
+  res.send(result);
+});
+
+
+
+
+
+
+
+
+
+
 
 
 
