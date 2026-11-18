@@ -71,7 +71,7 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 
 
-// Tutor
+// Tuition
 app.post("/tuitions", async (req, res) => {
   const tuition = req.body;
 
@@ -233,6 +233,91 @@ app.delete("/tuitions/:id", async (req, res) => {
 
   res.send(result);
 });
+
+
+
+// Application
+app.post("/applications", async (req, res) => {
+  const data = req.body;
+
+  const student = await usersCollection.findOne({ email: data.studentEmail });
+
+  if (!student || student.role !== "student") {
+    return res.status(403).send({
+        message: "Only students can apply"
+    });
+  }
+
+  const tuition = await tuitionsCollection.findOne({
+    _id: new ObjectId(data.tuitionId),
+  });
+
+  if (!tuition) {
+    return res.status(404).send({
+        message: "Tuition not found"
+    });
+  }
+
+  const alreadyApplied = await applicationsCollection.findOne({
+    tuitionId: data.tuitionId,
+    studentEmail: data.studentEmail,
+  });
+
+  if (alreadyApplied) {
+    return res.status(409).send({
+        message: "You already applied for this tuition"
+    });
+  }
+
+  const application = {
+    tuitionId: data.tuitionId,
+    tuitionTitle: tuition.title,
+    subject: tuition.subject,
+    monthlyFee: tuition.monthlyFee,
+    tutorName: tuition.tutorName,
+    tutorEmail: tuition.tutorEmail,
+    studentName: data.studentName,
+    studentEmail: data.studentEmail,
+    studentPhone: data.studentPhone,
+    preferredSchedule: data.preferredSchedule,
+    studentNote: data.studentNote,
+    status: "pending",
+    appliedAt: new Date(),
+  };
+
+  const result = await applicationsCollection.insertOne(application);
+  res.status(201).send(result);
+});
+
+app.get("/applications/my", async (req, res) => {
+  const { email } = req.query;
+
+  const applications = await applicationsCollection
+    .find({ studentEmail: email })
+    .sort({ appliedAt: -1 })
+    .toArray();
+  res.send(applications);
+});
+
+app.delete("/applications/:id", async (req, res) => {
+
+  const result = await applicationsCollection.deleteOne({
+    _id: new ObjectId(req.params.id),
+    status: "pending",
+  });
+
+  if (result.deletedCount === 0) {
+    return res
+      .status(400)
+      .send({ message: "Only pending applications can be cancelled" });
+  }
+  res.send(result);
+});
+
+
+
+
+
 
 
 
