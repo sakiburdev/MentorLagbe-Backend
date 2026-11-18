@@ -472,7 +472,7 @@ app.get("/stats/admin", async (req, res) => {
 });
 
 app.get("/stats/public", async (req, res) => {
-    
+
   const [tutors, students, tuitions] = await Promise.all([
     usersCollection.countDocuments({ role: "tutor" }),
     usersCollection.countDocuments({ role: "student" }),
@@ -483,8 +483,28 @@ app.get("/stats/public", async (req, res) => {
 });
 
 
+// User info
+app.get("/users/:email", async (req, res) => {
+  const user = await usersCollection.findOne({ email: req.params.email });
 
+  if (!user) {
+    return res.status(404).send({ message: "User not found" });
+  }
 
+  res.send(user);
+});
+
+// Profile update
+app.patch("/users/:email", async (req, res) => {
+  const { name, phone, bio, image } = req.body;
+
+  const result = await usersCollection.updateOne(
+    { email: req.params.email },
+    { $set: { name, phone, bio, image } }
+  );
+
+  res.send(result);
+});
 
 
 
