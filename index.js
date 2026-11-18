@@ -314,6 +314,7 @@ app.delete("/applications/:id", async (req, res) => {
   res.send(result);
 });
 
+
 app.get("/applications/tutor", async (req, res) => {
   const { email } = req.query;
 
@@ -344,11 +345,67 @@ app.patch("/applications/:id", async (req, res) => {
 });
 
 
+// Admin
+app.get("/admin/tuitions", async (req, res) => {
+
+  const tuitions = await tuitionsCollection
+    .find()
+    .sort({ createdAt: -1 })
+    .toArray();
+  res.send(tuitions);
+});
+
+// approve / reject
+app.patch("/admin/tuitions/:id", async (req, res) => {
+  const { approvalStatus } = req.body;
+
+  if (!["approved", "rejected"].includes(approvalStatus)) {
+
+    return res.status(400).send({
+        message: "Invalid status"
+    });
+  }
+
+  const result = await tuitionsCollection.updateOne(
+    { _id: new ObjectId(req.params.id) },
+    { $set: { approvalStatus } }
+  );
+
+  res.send(result);
+});
+
+// user
+app.get("/admin/users", async (req, res) => {
+  const users = await usersCollection.find().sort({ createdAt: -1 }).toArray();
+  res.send(users);
+});
+
+// User role
+app.patch("/admin/users/:id/role", async (req, res) => {
+  const { role } = req.body;
+
+  if (!["student", "tutor", "admin"].includes(role)) {
+    return res.status(400).send({
+        message: "Invalid role"
+    });
+  }
+
+  const result = await usersCollection.updateOne(
+    { _id: new ObjectId(req.params.id) },
+    { $set: { role } }
+  );
+
+  res.send(result);
+});
 
 
-
-
-
+app.get("/admin/transactions", async (req, res) => {
+  const payments = await paymentsCollection
+    .find()
+    .sort({ paidAt: -1 })
+    .toArray();
+  res.send(payments);
+});
 
 
 
