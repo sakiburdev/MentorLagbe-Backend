@@ -9,6 +9,13 @@ import { toNodeHandler } from "better-auth/node";
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Middleware
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+  })
+);
 
 // MongoDB Connection
 const client = new MongoClient(process.env.MONGODB_URL);
@@ -59,9 +66,9 @@ const auth = betterAuth({
   },
 });
 
-
-
-
+// BetterAuth route
+app.all("/api/auth/*splat", toNodeHandler(auth));
+app.use(express.json());
 
 
 
