@@ -408,6 +408,83 @@ app.get("/admin/transactions", async (req, res) => {
 });
 
 
+// Student overview
+app.get("/stats/student", async (req, res) => {
+  const { email } = req.query;
+  const user = await usersCollection.findOne({ email });
+
+  const [total, accepted, pending] = await Promise.all([
+    applicationsCollection.countDocuments({ studentEmail: email }),
+    applicationsCollection.countDocuments({ studentEmail: email, status: "accepted" }),
+    applicationsCollection.countDocuments({ studentEmail: email, status: "pending" }),
+  ]);
+
+  res.send({ total, accepted, pending, plan: user?.plan || "free" });
+});
+
+// Tutor overview
+app.get("/stats/tutor", async (req, res) => {
+  const { email } = req.query;
+  const user = await usersCollection.findOne({ email });
+
+  const [totalTuitions, approvedTuitions, totalApplicants] = await Promise.all([
+    tuitionsCollection.countDocuments({ tutorEmail: email }),
+
+    tuitionsCollection.countDocuments({
+      tutorEmail: email,
+      approvalStatus: "approved",
+      isActive: true,
+    }),
+
+    applicationsCollection.countDocuments({ tutorEmail: email }),
+  ]);
+
+  res.send({
+    totalTuitions,
+    approvedTuitions,
+    totalApplicants,
+    plan: user?.plan || "free",
+  });
+});
+
+// Admin overview
+app.get("/stats/admin", async (req, res) => {
+
+  const [totalUsers, totalTutors, pendingTuitions, approvedTuitions, revenueData] =
+    await Promise.all([
+      usersCollection.countDocuments(),
+      usersCollection.countDocuments({ role: "tutor" }),
+      tuitionsCollection.countDocuments({ approvalStatus: "pending" }),
+      tuitionsCollection.countDocuments({ approvalStatus: "approved" }),
+
+      paymentsCollection
+        .aggregate([{ $group: { _id: null, total: { $sum: "$amount" } } }])
+        .toArray(),
+    ]);
+
+  res.send({
+    totalUsers,
+    totalTutors,
+    pendingTuitions,
+    approvedTuitions,
+    totalRevenue: revenueData[0]?.total || 0,
+  });
+});
+
+app.get("/stats/public", async (req, res) => {
+    
+  const [tutors, students, tuitions] = await Promise.all([
+    usersCollection.countDocuments({ role: "tutor" }),
+    usersCollection.countDocuments({ role: "student" }),
+    tuitionsCollection.countDocuments({ approvalStatus: "approved" }),
+  ]);
+
+  res.send({ tutors, students, tuitions });
+});
+
+
+
+
 
 
 
