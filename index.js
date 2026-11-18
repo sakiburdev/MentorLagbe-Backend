@@ -314,11 +314,34 @@ app.delete("/applications/:id", async (req, res) => {
   res.send(result);
 });
 
+app.get("/applications/tutor", async (req, res) => {
+  const { email } = req.query;
 
+  const applications = await applicationsCollection
+    .find({ tutorEmail: email })
+    .sort({ appliedAt: -1 })
+    .toArray();
+  res.send(applications);
+});
 
+// accept / reject
+app.patch("/applications/:id", async (req, res) => {
+  const { status } = req.body;
 
+  // accepted, rejected allow
+  if (!["accepted", "rejected"].includes(status)) {
+    return res.status(400).send({
+        message: "Invalid status"
+    });
+  }
 
+  const result = await applicationsCollection.updateOne(
+    { _id: new ObjectId(req.params.id) },
+    { $set: { status } }
+  );
 
+  res.send(result);
+});
 
 
 
