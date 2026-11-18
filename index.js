@@ -108,6 +108,41 @@ app.post("/tuitions", async (req, res) => {
 });
 
 
+app.get("/tuitions", async (req, res) => {
+  const { search, subject, classLevel, mode } = req.query;
+
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 6;
+
+  const query = { approvalStatus: "approved", isActive: true };
+
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { subject: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (subject) query.subject = subject;
+  if (classLevel) query.classLevel = classLevel;
+  if (mode) query.mode = mode;
+
+  const total = await tuitionsCollection.countDocuments(query);
+
+  const tuitions = await tuitionsCollection
+    .find(query)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .toArray();
+
+  res.send({
+    tuitions,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
+});
 
 
 
