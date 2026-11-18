@@ -71,6 +71,43 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 
 
+// Tutor
+app.post("/tuitions", async (req, res) => {
+  const tuition = req.body;
+
+  const tutor = await usersCollection.findOne({ email: tuition.tutorEmail });
+  if (!tutor) {
+    return res.status(404).send({
+        message: "Tutor not found"
+    });
+  }
+
+  if (tutor.plan === "free") {
+    const count = await tuitionsCollection.countDocuments({
+      tutorEmail: tuition.tutorEmail,
+    });
+
+    if (count >= 2) {
+      return res.status(403).send({
+        message: "Free plan limit reached. Upgrade to Pro for unlimited posts.",
+      });
+    }
+  }
+
+  const newTuition = {
+    ...tuition,
+    monthlyFee: Number(tuition.monthlyFee),
+    daysPerWeek: Number(tuition.daysPerWeek),
+    approvalStatus: "pending",
+    isActive: true,
+    createdAt: new Date(),
+  };
+
+  const result = await tuitionsCollection.insertOne(newTuition);
+  res.status(201).send(result);
+});
+
+
 
 
 
