@@ -145,7 +145,34 @@ app.get("/tuitions", async (req, res) => {
 });
 
 
+app.get("/tuitions/featured", async (req, res) => {
+    
+  const tuitions = await tuitionsCollection
+    .find({ approvalStatus: "approved", isActive: true })
+    .sort({ createdAt: -1 })
+    .limit(6)
+    .toArray();
+  res.send(tuitions);
+});
 
+// tuition details
+app.get("/tuitions/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({
+        message: "Invalid tuition id"
+    });
+  }
+
+  const tuition = await tuitionsCollection.findOne({ _id: new ObjectId(id) });
+  if (!tuition) {
+    return res.status(404).send({
+        message: "Tuition not found"
+    });
+  }
+  res.send(tuition);
+});
 
 
 
