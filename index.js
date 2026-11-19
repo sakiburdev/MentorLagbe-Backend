@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { MongoClient, ObjectId } from 'mongodb';
 import { betterAuth } from "better-auth";
+import { jwt } from "better-auth/plugins";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { toNodeHandler } from "better-auth/node";
 
@@ -35,7 +36,7 @@ await applicationsCollection.createIndex(
   { unique: true }
 );
 
-// user, session manage
+// Better Auth 
 const auth = betterAuth({
   database: mongodbAdapter(db, { client }),
   secret: process.env.BETTER_AUTH_SECRET,
@@ -43,6 +44,16 @@ const auth = betterAuth({
   trustedOrigins: [process.env.CLIENT_URL],
 
   emailAndPassword: { enabled: true },
+
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    },
+  },
+
+  // Login Session
+  session: { expiresIn: 60 * 60 * 24 * 3 },
 
   user: {
     modelName: "users",
@@ -53,6 +64,16 @@ const auth = betterAuth({
       bio: { type: "string", required: false },
     },
   },
+
+ // JWT Plugin
+  plugins: [
+    jwt({
+      jwt: {
+        expirationTime: "3d",
+        definePayload: ({ user }) => ({ email: user.email }),
+      },
+    }),
+  ],
 
   databaseHooks: {
     user: {
@@ -66,8 +87,10 @@ const auth = betterAuth({
   },
 });
 
-// BetterAuth route
+// Better Auth Route
 app.all("/api/auth/*splat", toNodeHandler(auth));
+
+// Express JSON
 app.use(express.json());
 
 
